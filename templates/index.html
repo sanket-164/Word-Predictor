@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Word Predictor</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>Word Predictor</h1>
+        <textarea id="input-text" rows="4" cols="50" placeholder="Start typing..."></textarea>
+        <div id="suggestion-box"></div>
+    </div>
+
+    <script>
+        const textarea = document.getElementById('input-text');
+        const suggestionBox = document.getElementById('suggestion-box');
+
+        // Function to fetch predictions from the backend
+        async function fetchPrediction(text) {
+            const response = await fetch('/predict', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ text })
+            });
+            const data = await response.json();
+            return data.suggestion;
+        }
+
+        // Event listener for space or tab key
+        async function handleInput(event) {
+            const text = textarea.value.trim();
+
+            // Clear suggestion box if no text
+            if (!text) {
+                suggestionBox.textContent = '';
+                return;
+            }
+
+            // Fetch prediction when space or tab is pressed
+            if (event.key === ' ') {
+                const suggestion = await fetchPrediction(text);
+                if (suggestion) {
+                    suggestionBox.textContent = suggestion;
+                } else {
+                    suggestionBox.textContent = '';
+                }
+            }
+        }
+
+        // Handle input events for space and tab
+        textarea.addEventListener('keydown', async (event) => {
+            // Prevent default tab behavior
+            if (event.key === 'Tab') {
+                event.preventDefault();
+            }
+
+            // Call the handleInput function
+            await handleInput(event);
+
+            // If Tab is pressed and a suggestion exists, append it to the text
+            if (event.key === 'Tab' && suggestionBox.textContent) {
+                textarea.value += suggestionBox.textContent + '';
+                suggestionBox.textContent = ''; // Clear suggestion box
+            }
+        });
+    </script>
+</body>
+</html>
